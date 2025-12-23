@@ -3,8 +3,9 @@ package ast
 import (
 	"errors"
 	"fmt"
-	"github.com/gobwas/glob/syntax/lexer"
 	"unicode/utf8"
+
+	"github.com/gobwas/glob/syntax/lexer"
 )
 
 type Lexer interface {
@@ -62,7 +63,7 @@ func parserMain(tree *Node, lex Lexer) (parseFn, *Node, error) {
 			return parserRange, tree, nil
 
 		case lexer.TermsOpen:
-			a := NewNode(KindAnyOf, nil)
+			a := NewNode(KindAnyOf, AnyOf{})
 			Insert(tree, a)
 
 			p := NewNode(KindPattern, nil)
@@ -79,11 +80,19 @@ func parserMain(tree *Node, lex Lexer) (parseFn, *Node, error) {
 		case lexer.TermsClose:
 			return parserMain, tree.Parent.Parent, nil
 
+		case lexer.Not:
+			if tree.Parent != nil && tree.Parent.Kind == KindAnyOf {
+				v := tree.Parent.Value.(AnyOf)
+				v.Not = true
+				tree.Parent.Value = v
+			}
+
+			return parserMain, tree, nil
+
 		default:
 			return nil, tree, fmt.Errorf("unexpected token: %s", token)
 		}
 	}
-	return nil, tree, fmt.Errorf("unknown error")
 }
 
 func parserRange(tree *Node, lex Lexer) (parseFn, *Node, error) {

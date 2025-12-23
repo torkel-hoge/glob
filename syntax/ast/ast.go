@@ -82,6 +82,10 @@ type Text struct {
 	Text string
 }
 
+type AnyOf struct {
+	Not bool
+}
+
 type Kind int
 
 const (

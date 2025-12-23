@@ -3,8 +3,9 @@ package lexer
 import (
 	"bytes"
 	"fmt"
-	"github.com/gobwas/glob/util/runes"
 	"unicode/utf8"
+
+	"github.com/gobwas/glob/util/runes"
 )
 
 const (
@@ -16,7 +17,7 @@ const (
 	char_range_close   = ']'
 	char_terms_open    = '{'
 	char_terms_close   = '}'
-	char_range_not     = '!'
+	char_not           = '!'
 	char_range_between = '-'
 )
 
@@ -159,6 +160,12 @@ func (l *lexer) fetchItem() {
 		l.termsEnter()
 		l.tokens.push(Token{TermsOpen, string(r)})
 
+		if l.read() == char_not {
+			l.tokens.push(Token{Not, string(char_not)})
+		} else {
+			l.unread()
+		}
+
 	case r == char_comma && l.inTerms():
 		l.tokens.push(Token{Separator, string(r)})
 
@@ -220,7 +227,7 @@ func (l *lexer) fetchRange() {
 			continue
 		}
 
-		if !seenNot && r == char_range_not {
+		if !seenNot && r == char_not {
 			l.tokens.push(Token{Not, string(r)})
 			seenNot = true
 			continue
