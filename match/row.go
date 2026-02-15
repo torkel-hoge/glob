@@ -18,6 +18,7 @@ func NewRow(len int, m ...Matcher) Row {
 	}
 }
 
+// matchAll matches all.
 func (self Row) matchAll(s string) bool {
 	var idx int
 	for _, m := range self.Matchers {
