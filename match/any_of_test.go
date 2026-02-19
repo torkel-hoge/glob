@@ -41,8 +41,8 @@ func TestAnyOfIndex(t *testing.T) {
 			[]int{1},
 		},
 	} {
-		everyOf := NewAnyOf(test.matchers...)
-		index, segments := everyOf.Index(test.fixture)
+		anyOf := NewAnyOf(test.matchers...)
+		index, segments := anyOf.Index(test.fixture)
 		if index != test.index {
 			t.Errorf("#%d unexpected index: exp: %d, act: %d", id, test.index, index)
 		}

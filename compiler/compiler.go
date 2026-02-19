@@ -346,7 +346,7 @@ func minimizeTreeAnyOf(tree *ast.Node) *ast.Node {
 	case len(anyOf) == 1 && anyOf[0].Kind != ast.KindNothing:
 		result = append(result, anyOf[0])
 	case len(anyOf) > 1:
-		result = append(result, ast.NewNode(ast.KindAnyOf, nil, anyOf...))
+		result = append(result, ast.NewNode(ast.KindAnyOf, tree.Value, anyOf...))
 	}
 
 	if commonRightCount > 0 {
@@ -469,6 +469,12 @@ func compile(tree *ast.Node, sep []rune) (m match.Matcher, err error) {
 		if err != nil {
 			return nil, err
 		}
+
+		v := tree.Value.(ast.AnyOf)
+		if v.Not {
+			return match.NewNotAnyOf(matchers...), nil
+		}
+
 		return match.NewAnyOf(matchers...), nil
 
 	case ast.KindPattern:

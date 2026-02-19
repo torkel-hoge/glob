@@ -1,11 +1,12 @@
 package compiler
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/gobwas/glob/match"
 	"github.com/gobwas/glob/match/debug"
 	"github.com/gobwas/glob/syntax/ast"
-	"reflect"
-	"testing"
 )
 
 var separators = []rune{'.'}
@@ -414,7 +415,7 @@ func TestCompiler(t *testing.T) {
 		{
 			ast: ast.NewNode(ast.KindPattern, nil,
 				ast.NewNode(ast.KindText, ast.Text{"/"}),
-				ast.NewNode(ast.KindAnyOf, nil,
+				ast.NewNode(ast.KindAnyOf, ast.AnyOf{},
 					ast.NewNode(ast.KindText, ast.Text{"z"}),
 					ast.NewNode(ast.KindText, ast.Text{"ab"}),
 				),
@@ -523,9 +524,9 @@ func TestCompiler(t *testing.T) {
 		},
 		{
 			ast: ast.NewNode(ast.KindPattern, nil,
-				ast.NewNode(ast.KindAnyOf, nil,
+				ast.NewNode(ast.KindAnyOf, ast.AnyOf{},
 					ast.NewNode(ast.KindPattern, nil,
-						ast.NewNode(ast.KindAnyOf, nil,
+						ast.NewNode(ast.KindAnyOf, ast.AnyOf{},
 							ast.NewNode(ast.KindPattern, nil,
 								ast.NewNode(ast.KindText, ast.Text{"abc"}),
 							),
@@ -537,7 +538,7 @@ func TestCompiler(t *testing.T) {
 		},
 		{
 			ast: ast.NewNode(ast.KindPattern, nil,
-				ast.NewNode(ast.KindAnyOf, nil,
+				ast.NewNode(ast.KindAnyOf, ast.AnyOf{},
 					ast.NewNode(ast.KindPattern, nil,
 						ast.NewNode(ast.KindText, ast.Text{"abc"}),
 						ast.NewNode(ast.KindSingle, nil),
@@ -584,7 +585,7 @@ func TestCompiler(t *testing.T) {
 		},
 		{
 			ast: ast.NewNode(ast.KindPattern, nil,
-				ast.NewNode(ast.KindAnyOf, nil,
+				ast.NewNode(ast.KindAnyOf, ast.AnyOf{},
 					ast.NewNode(ast.KindPattern, nil,
 						ast.NewNode(ast.KindText, ast.Text{"abc"}),
 						ast.NewNode(ast.KindList, ast.List{Chars: "abc"}),
@@ -607,6 +608,70 @@ func TestCompiler(t *testing.T) {
 					}},
 					match.NewText("ghi"),
 				}...,
+			),
+		},
+		// {!foo,bar}
+		{
+			ast: ast.NewNode(ast.KindPattern, nil,
+				&ast.Node{
+					Kind: ast.KindAnyOf,
+					Value: ast.AnyOf{
+						Not: true,
+					},
+					Children: []*ast.Node{
+						ast.NewNode(ast.KindPattern, nil, ast.NewNode(ast.KindText, ast.Text{"foo"})),
+						ast.NewNode(ast.KindPattern, nil, ast.NewNode(ast.KindText, ast.Text{"bar"})),
+					},
+				},
+			),
+			result: match.NewNotAnyOf(
+				match.NewText("foo"),
+				match.NewText("bar"),
+			),
+		},
+		// {!foo,bar}baz
+		{
+			ast: ast.NewNode(ast.KindPattern, nil,
+				&ast.Node{
+					Kind: ast.KindAnyOf,
+					Value: ast.AnyOf{
+						Not: true,
+					},
+					Children: []*ast.Node{
+						ast.NewNode(ast.KindPattern, nil, ast.NewNode(ast.KindText, ast.Text{"foo"})),
+						ast.NewNode(ast.KindPattern, nil, ast.NewNode(ast.KindText, ast.Text{"bar"})),
+					},
+				},
+				ast.NewNode(ast.KindText, ast.Text{"baz"}),
+			),
+			result: match.NewBTree(
+				match.NewText("baz"),
+				match.NewNotAnyOf(
+					match.NewText("foo"),
+					match.NewText("bar"),
+				),
+				nil,
+			),
+		},
+		// {!nginx*}
+		{
+			ast: ast.NewNode(ast.KindPattern, nil,
+				&ast.Node{
+					Kind: ast.KindAnyOf,
+					Value: ast.AnyOf{
+						Not: true,
+					},
+					Children: []*ast.Node{
+						ast.NewNode(ast.KindPattern, nil,
+							ast.NewNode(ast.KindText, ast.Text{"nginx"}),
+							ast.NewNode(ast.KindAny, nil),
+						),
+					},
+				},
+			),
+			sep: nil,
+			result: match.NewNotAnyOf(
+				match.NewPrefix("nginx"),
 			),
 		},
 	} {
